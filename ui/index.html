@@ -1,0 +1,32 @@
+<!doctype html>
+<!-- Copyright (c) 2026 AllIsA1. SPDX-License-Identifier: MIT -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Better CSQTT</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <h1 data-i18n="title">CSQTT members</h1>
+      <p class="muted" data-i18n="intro"></p>
+      <p id="summary" class="muted"></p>
+      <p id="error" class="message error" role="alert" hidden></p>
+      <table id="members">
+        <thead>
+          <tr>
+            <th data-i18n="colClient"></th>
+            <th data-i18n="colState"></th>
+            <th data-i18n="colOn"></th>
+            <th data-i18n="colSessions"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p id="empty" class="muted" data-i18n="empty" hidden></p>
+      <div class="row"><button id="sync" class="primary" data-i18n="sync"></button></div>
+    </main>
+    <script src="lucx-ui.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
