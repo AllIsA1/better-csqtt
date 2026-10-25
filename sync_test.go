@@ -442,3 +442,28 @@ func TestAnExpiredClientIsSwitchedOffAndAMemberThatChangedHandsIsNotDeleted(t *t
 		t.Errorf("a member that is not the plugin's any more was deleted: %+v", boris)
 	}
 }
+
+func TestTheInboundsHashesAreGivenToTheServerCommaSeparatedWithoutSpaces(t *testing.T) {
+	for in, want := range map[string]string{
+		"h1,h2": "h1,h2",
+		"  aaaaaaaaaaaaaaaa \n bbbbbbbbbbbbbbbb ": "aaaaaaaaaaaaaaaa,bbbbbbbbbbbbbbbb",
+		"a+b + c,d\te":    "a,b,c,d,e",
+		"1 2 3 4 5 6 7 8": "1,2,3,4,5,6",
+		"":                "",
+		" , + ":           "",
+	} {
+		if got := serverHashes(in); got != want {
+			t.Errorf("serverHashes(%q) = %q, want %q", in, got, want)
+		}
+	}
+	r := newRig(t, pclient("admin", "subA"))
+	r.p.inbounds = []map[string]any{csqttInbound(func(m map[string]any) {
+		m["settings"].(map[string]any)["vkHashes"] = "aaaaaaaaaaaaaaaa bbbbbbbbbbbbbbbb\ncccccccccccccccc"
+	})}
+	if err := r.sync(); err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Join(r.srv.calls, ","); !strings.Contains(got, "create admin aaaaaaaaaaaaaaaa,bbbbbbbbbbbbbbbb,cccccccccccccccc") {
+		t.Errorf("calls = %s", got)
+	}
+}

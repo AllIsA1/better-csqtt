@@ -38,6 +38,18 @@ type target struct {
 	HostName  string // the host the links must name
 }
 
+// serverHashes puts the inbound's VK hashes in the form the server's web API takes: up to six, comma-separated,
+// no spaces. The panel lets them be separated by commas, plus signs, spaces or lines.
+func serverHashes(raw string) string {
+	parts := strings.FieldsFunc(raw, func(r rune) bool {
+		return r == ',' || r == '+' || r == ' ' || r == '\n' || r == '\r' || r == '\t'
+	})
+	if len(parts) > 6 {
+		parts = parts[:6]
+	}
+	return strings.Join(parts, ",")
+}
+
 type inboundRow struct {
 	ID       int             `json:"id"`
 	Protocol string          `json:"protocol"`
@@ -82,7 +94,7 @@ func findTarget(rows []inboundRow) (target, error) {
 			return target{}, errors.New("the CSQTT inbound has no web password or main password yet")
 		}
 		t := target{InboundID: r.ID, Remark: strings.TrimSpace(r.Remark), MainPass: s.Password, WebPass: s.WebPass,
-			Hashes: strings.TrimSpace(s.Hashes), HostName: strings.TrimSpace(s.SubHost)}
+			Hashes: serverHashes(s.Hashes), HostName: strings.TrimSpace(s.SubHost)}
 		if r.NodeID != nil {
 			if t.HostName == "" {
 				return target{}, errors.New("the CSQTT inbound is on a node and has no public host to reach its web panel at")
