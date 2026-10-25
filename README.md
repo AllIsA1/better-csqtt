@@ -21,7 +21,7 @@ be made through the server's web API. This plugin uses that list.
   with a client's name, is used for its link and never touched.
 - Anything that goes wrong (the server is down, the panel does not answer, no member yet) leaves the subscription as the panel makes
   it, with the shared link. Switch the plugin off and the shared link is back for everybody.
-- The page of the plugin lists the members, their state and live sessions.
+- The plugin has no page of its own and no sidebar entry: it works by itself. Its log shows the members it made.
 
 ## How it reaches the server
 
@@ -36,3 +36,10 @@ It does not count traffic per member in the panel, and it does not move people b
 (a new one) gets the shared link until the next check, at most half a minute.
 
 MIT, see `LICENSE`.
+
+## Links in the subscription
+
+The server makes sealed links (`csqtt://<base64url>`); the official CSQTT app reads only those, but it never fetches a subscription.
+Proxy clients that do (YPtun, for one) read only the plain form, `csqtt://connect?v=2&host=…&peer=…&password=…&hashes=a+b`. So the raw
+subscription carries the member's link in the plain form, with no `#name`; the subscription page keeps the sealed
+link for pasting into the official app.

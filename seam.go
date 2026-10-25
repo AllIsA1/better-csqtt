@@ -77,6 +77,9 @@ func subscriptionSeam(c SeamCall, m memberLinks) (SeamReply, error) {
 	}
 	original := strings.Split(strings.TrimRight(text, "\n"), "\n")
 	lines := swapLinks(original, own, m)
+	for i, l := range lines {
+		lines[i] = plainCsqttLink(l) // the sealed form is for the official app's paste box; a client that fetches reads the plain one
+	}
 	if slices.Equal(lines, original) {
 		return Keep(), nil
 	}

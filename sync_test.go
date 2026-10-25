@@ -349,8 +349,11 @@ func TestTheSubscriptionAndItsPageCarryTheMembersLink(t *testing.T) {
 		t.Fatalf("raw: %+v %v", reply, err)
 	}
 	dec, _ := base64.StdEncoding.DecodeString(string(*reply.Response.Body))
-	if !strings.Contains(string(dec), "#N") || strings.Contains(string(dec), linkWith(t, "MAIN")) {
-		t.Errorf("subscription = %q", dec)
+	if strings.Contains(string(dec), linkWith(t, "MAIN")) || strings.Contains(string(dec), linkWith(t, "own")) {
+		t.Errorf("subscription = %q: a sealed link is still there", dec)
+	}
+	if !strings.Contains(string(dec), "csqtt://connect?v=2&host=poland.example&peer=46000&password=own") || strings.Contains(string(dec), "#N") {
+		t.Errorf("subscription = %q: want the member's plain link, with no #name", dec)
 	}
 	data, _ := json.Marshal(map[string]any{"links": []string{"vless://x#a", linkWith(t, "MAIN")}, "sId": "s"})
 	page := []byte(`<html><head><script>window.__SUB_PAGE_DATA__=` + string(data) + `;</script></head></html>`)
@@ -465,5 +468,21 @@ func TestTheInboundsHashesAreGivenToTheServerCommaSeparatedWithoutSpaces(t *test
 	}
 	if got := strings.Join(r.srv.calls, ","); !strings.Contains(got, "create admin aaaaaaaaaaaaaaaa,bbbbbbbbbbbbbbbb,cccccccccccccccc") {
 		t.Errorf("calls = %s", got)
+	}
+}
+
+func TestPlainLinkOfASealedOneKeepsPasswordAndHashesAndLeavesOthersAlone(t *testing.T) {
+	sealed := seal(t, "connect?v=2&host=h.example&peer=9&password=a%2Bb~c%20d&hashes=aa+bb")
+	if got, want := plainCsqttLink(sealed+"#Name"), "csqtt://connect?v=2&host=h.example&peer=9&password=a%2Bb~c%20d&hashes=aa+bb"; got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+	raw := seal(t, "connect?v=2&host=h&peer=1&password=a+b")
+	if got, want := plainCsqttLink(raw), "csqtt://connect?v=2&host=h&peer=1&password=a%2Bb"; got != want {
+		t.Errorf("a raw plus in the sealed text is a plus: got %q, want %q", got, want)
+	}
+	for _, l := range []string{"vless://x#a", "csqtt://connect?v=2&host=h&peer=1&password=p", "csqtt://", "csqtt://notbase64!!", seal(t, "connect?v=2&host=&peer=1&password=p"), seal(t, "nothing")} {
+		if got := plainCsqttLink(l); got != l {
+			t.Errorf("plainCsqttLink(%q) = %q", l, got)
+		}
 	}
 }

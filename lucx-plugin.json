@@ -1,7 +1,7 @@
 {
   "id": "better-csqtt",
   "name": "Better CSQTT",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "apiVersion": "1",
   "description": "One CSQTT password per person. The CSQTT server lets one password hold one live session, so two people on the shared password push each other off. This plugin makes a member with a password of its own on the CSQTT server for every client of the CSQTT inbound and gives each client their own link in the subscription. Switch it off and the subscription carries the shared link again.",
   "author": "AllIsA1",
@@ -15,8 +15,7 @@
     "seam:sub",
     "api:inbounds:read",
     "api:clients:read",
-    "network",
-    "ui:menu"
+    "network"
   ],
   "seams": [
     {
@@ -27,14 +26,5 @@
       ],
       "route": "/links/:subid"
     }
-  ],
-  "ui": {
-    "menu": [
-      {
-        "title": "Better CSQTT",
-        "icon": "team",
-        "path": "/ui/index.html"
-      }
-    ]
-  }
+  ]
 }
