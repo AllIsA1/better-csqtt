@@ -19,6 +19,7 @@ const seamRoute = "/links/:subid"
 type memberLinks interface {
 	linkFor(subID string) (string, bool)
 	isMain(password string) bool
+	inboundName() string
 }
 
 // swapLinks replaces the shared csqtt:// line (the one with the panel's main password) by the member's own,
@@ -77,8 +78,9 @@ func subscriptionSeam(c SeamCall, m memberLinks) (SeamReply, error) {
 	}
 	original := strings.Split(strings.TrimRight(text, "\n"), "\n")
 	lines := swapLinks(original, own, m)
+	inbound := m.inboundName()
 	for i, l := range lines {
-		lines[i] = plainCsqttLink(l) // the sealed form is for the official app's paste box; a client that fetches reads the plain one
+		lines[i] = plainCsqttLink(l, inbound) // the sealed form is for the official app's paste box; a client that fetches reads the plain one, named after the inbound
 	}
 	if slices.Equal(lines, original) {
 		return Keep(), nil

@@ -167,6 +167,7 @@ type syncer struct {
 	mu      sync.Mutex
 	links   map[string]string // subscription id -> the member's link
 	mains   map[string]bool   // the shared password(s) whose links are replaced
+	remark  string            // the CSQTT inbound's name: it follows the '#' of the plain link
 	st      status
 	wake    chan struct{}
 	running sync.Mutex
@@ -215,6 +216,12 @@ func (s *syncer) isMain(password string) bool {
 	return s.mains[password]
 }
 
+func (s *syncer) inboundName() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.remark
+}
+
 func (s *syncer) status() status {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -243,7 +250,7 @@ func (s *syncer) syncOnce(ctx context.Context) error {
 	t, err := findTarget(rows)
 	if err != nil {
 		s.mu.Lock()
-		s.links, s.mains = map[string]string{}, map[string]bool{}
+		s.links, s.mains, s.remark = map[string]string{}, map[string]bool{}, ""
 		s.mu.Unlock()
 		return s.fail(err)
 	}
@@ -344,6 +351,7 @@ func (s *syncer) syncOnce(ctx context.Context) error {
 	s.mu.Lock()
 	s.links = links
 	s.mains = map[string]bool{t.MainPass: true}
+	s.remark = t.Remark
 	s.st = status{CheckedAt: s.now().UTC(), Server: srv.Where(), Members: members}
 	if firstErr != nil {
 		s.st.Error = firstErr.Error()

@@ -41,5 +41,6 @@ MIT, see `LICENSE`.
 
 The server makes sealed links (`csqtt://<base64url>`); the official CSQTT app reads only those, but it never fetches a subscription.
 Proxy clients that do (YPtun, for one) read only the plain form, `csqtt://connect?v=2&host=…&peer=…&password=…&hashes=a+b`. So the raw
-subscription carries the member's link in the plain form, with no `#name`; the subscription page keeps the sealed
+subscription carries the member's link in the plain form, named after the CSQTT inbound: its remark follows the `#` at the end
+(`…&hashes=a+b#Poland%201`); the subscription page keeps the sealed
 link for pasting into the official app.

@@ -163,6 +163,9 @@ func TestEveryClientGetsAMemberWithAPasswordOfItsOwn(t *testing.T) {
 	if !r.s.isMain("MAINPASS") || r.s.isMain(linkPassword(a)) {
 		t.Error("only the shared password is the one that is replaced")
 	}
+	if r.s.inboundName() != "Poland" {
+		t.Errorf("inbound name = %q", r.s.inboundName())
+	}
 }
 
 func TestASecondSyncChangesNothingOnTheServer(t *testing.T) {
@@ -295,12 +298,14 @@ func mustJSON(v any) json.RawMessage {
 }
 
 type linkSrc struct {
-	links map[string]string
-	main  string
+	links   map[string]string
+	main    string
+	inbound string
 }
 
 func (l linkSrc) linkFor(id string) (string, bool) { v, ok := l.links[id]; return v, ok }
 func (l linkSrc) isMain(pw string) bool            { return pw == l.main }
+func (l linkSrc) inboundName() string              { return l.inbound }
 
 func TestTheSharedLinkIsReplacedByTheMembersOwnAndKeepsItsName(t *testing.T) {
 	src := linkSrc{links: map[string]string{"s": linkWith(t, "own")}, main: "MAIN"}
@@ -342,7 +347,7 @@ func seamCall(subID string, body []byte, ct string) SeamCall {
 }
 
 func TestTheSubscriptionAndItsPageCarryTheMembersLink(t *testing.T) {
-	src := linkSrc{links: map[string]string{"s": linkWith(t, "own")}, main: "MAIN"}
+	src := linkSrc{links: map[string]string{"s": linkWith(t, "own")}, main: "MAIN", inbound: "Польша 1"}
 	raw := base64.StdEncoding.EncodeToString([]byte("vless://x#a\n" + linkWith(t, "MAIN") + "#N"))
 	reply, err := subscriptionSeam(seamCall("s", []byte(raw), "text/plain; charset=utf-8"), src)
 	if err != nil || reply.Action != "modify" {
@@ -352,8 +357,8 @@ func TestTheSubscriptionAndItsPageCarryTheMembersLink(t *testing.T) {
 	if strings.Contains(string(dec), linkWith(t, "MAIN")) || strings.Contains(string(dec), linkWith(t, "own")) {
 		t.Errorf("subscription = %q: a sealed link is still there", dec)
 	}
-	if !strings.Contains(string(dec), "csqtt://connect?v=2&host=poland.example&peer=46000&password=own") || strings.Contains(string(dec), "#N") {
-		t.Errorf("subscription = %q: want the member's plain link, with no #name", dec)
+	if !strings.Contains(string(dec), "csqtt://connect?v=2&host=poland.example&peer=46000&password=own#%D0%9F%D0%BE%D0%BB%D1%8C%D1%88%D0%B0%201") || strings.Contains(string(dec), "#N") {
+		t.Errorf("subscription = %q: want the member's plain link named after the inbound", dec)
 	}
 	data, _ := json.Marshal(map[string]any{"links": []string{"vless://x#a", linkWith(t, "MAIN")}, "sId": "s"})
 	page := []byte(`<html><head><script>window.__SUB_PAGE_DATA__=` + string(data) + `;</script></head></html>`)
@@ -473,15 +478,18 @@ func TestTheInboundsHashesAreGivenToTheServerCommaSeparatedWithoutSpaces(t *test
 
 func TestPlainLinkOfASealedOneKeepsPasswordAndHashesAndLeavesOthersAlone(t *testing.T) {
 	sealed := seal(t, "connect?v=2&host=h.example&peer=9&password=a%2Bb~c%20d&hashes=aa+bb")
-	if got, want := plainCsqttLink(sealed+"#Name"), "csqtt://connect?v=2&host=h.example&peer=9&password=a%2Bb~c%20d&hashes=aa+bb"; got != want {
-		t.Errorf("got %q, want %q", got, want)
+	if got, want := plainCsqttLink(sealed+"#Name", ""), "csqtt://connect?v=2&host=h.example&peer=9&password=a%2Bb~c%20d&hashes=aa+bb#Name"; got != want {
+		t.Errorf("the line's own name is kept without an inbound name: got %q, want %q", got, want)
+	}
+	if got, want := plainCsqttLink(sealed+"#Name", "Poland 1"), "csqtt://connect?v=2&host=h.example&peer=9&password=a%2Bb~c%20d&hashes=aa+bb#Poland%201"; got != want {
+		t.Errorf("the inbound's name follows the '#': got %q, want %q", got, want)
 	}
 	raw := seal(t, "connect?v=2&host=h&peer=1&password=a+b")
-	if got, want := plainCsqttLink(raw), "csqtt://connect?v=2&host=h&peer=1&password=a%2Bb"; got != want {
+	if got, want := plainCsqttLink(raw, ""), "csqtt://connect?v=2&host=h&peer=1&password=a%2Bb"; got != want {
 		t.Errorf("a raw plus in the sealed text is a plus: got %q, want %q", got, want)
 	}
 	for _, l := range []string{"vless://x#a", "csqtt://connect?v=2&host=h&peer=1&password=p", "csqtt://", "csqtt://notbase64!!", seal(t, "connect?v=2&host=&peer=1&password=p"), seal(t, "nothing")} {
-		if got := plainCsqttLink(l); got != l {
+		if got := plainCsqttLink(l, "Poland"); got != l {
 			t.Errorf("plainCsqttLink(%q) = %q", l, got)
 		}
 	}

@@ -10,15 +10,19 @@ import (
 
 // plainCsqttLink is the plain form of a sealed CSQTT link, csqtt://connect?v=2&host=..&peer=..&password=..[&hashes=a+b],
 // which is what the proxy clients that fetch a subscription (YPtun for one) read; they skip the sealed form. Any other
-// line (a plain CSQTT link included) is returned as it is. The #name is dropped: a client takes it for a part of the
-// last value.
-func plainCsqttLink(line string) string {
+// line (a plain CSQTT link included) is returned as it is. The name of the inbound goes after the last '#'; with no
+// inbound name, the one the line had is kept.
+func plainCsqttLink(line, inbound string) string {
 	rest, ok := strings.CutPrefix(strings.TrimSpace(line), "csqtt://")
 	if !ok || rest == "" {
 		return line
 	}
+	name := ""
 	if i := strings.IndexByte(rest, '#'); i >= 0 {
-		rest = rest[:i]
+		rest, name = rest[:i], rest[i+1:]
+	}
+	if inbound = strings.TrimSpace(inbound); inbound != "" {
+		name = escapeUnreserved(inbound)
 	}
 	payload, err := openSealed(rest)
 	if err != nil {
@@ -43,6 +47,9 @@ func plainCsqttLink(line string) string {
 			hashes[i] = escapeUnreserved(h)
 		}
 		out += "&hashes=" + strings.Join(hashes, "+")
+	}
+	if name != "" {
+		out += "#" + name
 	}
 	return out
 }
